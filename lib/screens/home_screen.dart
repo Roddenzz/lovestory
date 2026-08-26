@@ -1,305 +1,71 @@
-import 'dart:convert';
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:lovestory/theme/app_theme.dart';
-import 'package:lovestory/widgets/love_overlay.dart';
 import 'package:lovestory/widgets/music_player.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+const ink = Color(0xFF241713), wine = Color(0xFF8E3F50), rose = Color(0xFFD77B84), blush = Color(0xFFF0C9BE), paper = Color(0xFFF7F0E7), cream = Color(0xFFFFFAF3);
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
+class HomeScreen extends StatefulWidget { const HomeScreen({super.key}); @override State<HomeScreen> createState()=>_HomeScreenState(); }
 class _HomeScreenState extends State<HomeScreen> {
-  // Specific assets
-  final String startImage = "assets/images/1770272714265(1).png";
-  final String proposalImage = "assets/images/20251031_224904.jpg";
-
-  // Gallery
-  List<String> _galleryImages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadGalleryImages();
-  }
-
-  Future<void> _loadGalleryImages() async {
-    final manifestContent = await DefaultAssetBundle.of(context).loadString('AssetManifest.json');
-    final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-    
-    final allImages = manifestMap.keys
-        .where((String key) => key.contains('assets/images/'))
-        .where((String key) => !key.contains('.DS_Store')) // mac junk safety
-        .toList();
-
-    // Filter out special ones to avoid duplication if desired, or keep them.
-    // Let's filter them out from the "Gallery" section so they are special.
-    // Note: AssetManifest paths might be slightly different (e.g. encoded), but usually match.
-    // We'll normalize or just simple string check.
-    
-    setState(() {
-      _galleryImages = allImages.where((path) {
-        return path != startImage && path != proposalImage;
-      }).toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LoveOverlayManager(
-      child: Scaffold(
-        backgroundColor: AppTheme.background,
-        body: Stack(
-          children: [
-            // Background decoration (subtle hearts or gradient)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.background,
-                      Colors.white,
-                      AppTheme.softPink.withOpacity(0.3),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            
-            // Main Content
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        _buildStoryCard(
-                          context,
-                          title: "Начало нашей истории",
-                          date: DateTime(2024, 12, 27),
-                          imagePath: startImage,
-                          description: "Все началось именно в этот день...",
-                          delay: 200,
-                        ),
-                        const SizedBox(height: 40),
-                        _buildStoryCard(
-                          context,
-                          title: "Я сделал предложение",
-                          date: DateTime(2025, 10, 29),
-                          imagePath: proposalImage,
-                          description: "Самый важный вопрос и самое долгожданное 'Да'!",
-                          delay: 400,
-                          isSpecial: true,
-                        ),
-                        const SizedBox(height: 40),
-                         Text(
-                          "Наши моменты",
-                          style: GoogleFonts.greatVibes(
-                            fontSize: 40,
-                            color: AppTheme.darkRed,
-                          ),
-                        ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-                _buildGallerySliver(),
-                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-              ],
-            ),
-
-            // Floating Music Player
-            const Positioned(
-              bottom: 20,
-              right: 20,
-              child: MusicPlayerWidget(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 250,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppTheme.primaryColor,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          "Love Story",
-          style: GoogleFonts.greatVibes(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              startImage, // Use start image as header bg too? Or maybe just a color/pattern. 
-                          // Let's use the start image with blur.
-              fit: BoxFit.cover,
-            ),
-            Container(color: Colors.black38), // Dim
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   const SizedBox(height: 40),
-                   Text(
-                    "Надежда & Арсений",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ).animate().fadeIn(duration: 1000.ms).slideY(begin: -0.5, end: 0),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStoryCard(
-    BuildContext context, {
-    required String title,
-    required DateTime date,
-    required String imagePath,
-    required String description,
-    required int delay,
-    bool isSpecial = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.asset(
-              imagePath,
-              height: 250,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 250,
-                  color: Colors.grey[300],
-                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isSpecial)
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite, color: AppTheme.primaryColor),
-                      const SizedBox(width: 8),
-                      Text("SPECIAL MOMENT", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.5)),
-                    ],
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 24),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat.yMMMMd('ru').format(date), // Requires intl initialization
-                  style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).animate(delay: Duration(milliseconds: delay))
-     .fadeIn(duration: 600.ms)
-     .slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildGallerySliver() {
-    if (_galleryImages.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox());
-    }
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.8,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final path = _galleryImages[index];
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                     color: Colors.black.withOpacity(0.1),
-                     blurRadius: 5,
-                     offset: const Offset(0, 2),
-                  )
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.asset(
-                  path,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.error)),
-                ),
-              ),
-            ).animate(delay: (100 * index).ms)
-             .fadeIn(duration: 500.ms)
-             .scale(begin: const Offset(0.9, 0.9));
-          },
-          childCount: _galleryImages.length,
-        ),
-      ),
-    );
-  }
+ final scroll=ScrollController(); bool intro=true; double progress=0;
+ static const gallery=['assets/images/0u4uZuWPf50.jpg','assets/images/20251106_135958.jpg','assets/images/20251108_161309.jpg','assets/images/IMG_2423.jpg','assets/images/20251217_234044.jpg','assets/images/IMG_2785.jpg','assets/images/20251106_140224.jpg','assets/images/IMG_2413.jpg'];
+ @override void initState(){super.initState();scroll.addListener(()=>setState(()=>progress=scroll.hasClients&&scroll.position.maxScrollExtent>0?scroll.offset/scroll.position.maxScrollExtent:0));SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarColor:Colors.transparent,statusBarIconBrightness:Brightness.light,systemNavigationBarColor:ink));}
+ @override void dispose(){scroll.dispose();super.dispose();}
+ @override Widget build(BuildContext context)=>Scaffold(backgroundColor:paper,body:Stack(children:[CustomScrollView(controller:scroll,physics:const BouncingScrollPhysics(),slivers:[hero(),SliverToBoxAdapter(child:beginning()),SliverToBoxAdapter(child:ticker()),SliverToBoxAdapter(child:timeline()),SliverToBoxAdapter(child:cinema()),SliverToBoxAdapter(child:moments()),SliverToBoxAdapter(child:promise()),SliverToBoxAdapter(child:reasons()),SliverToBoxAdapter(child:letter()),SliverToBoxAdapter(child:footer())]),Positioned(top:0,left:0,right:0,child:SafeArea(bottom:false,child:LinearProgressIndicator(value:progress.clamp(0,1),minHeight:2,color:blush,backgroundColor:Colors.transparent))),const Positioned(bottom:22,right:16,child:MusicPlayerWidget()),if(intro)Positioned.fill(child:PixelHeartIntro(onFinished:()=>setState(()=>intro=false)))]));
+ Widget hero()=>SliverAppBar(expandedHeight:MediaQuery.sizeOf(context).height*.93,pinned:true,stretch:true,backgroundColor:ink,surfaceTintColor:Colors.transparent,leadingWidth:76,leading:Center(child:Text('Н ♥ А',style:GoogleFonts.cormorantGaramond(color:cream,fontSize:17,fontWeight:FontWeight.w600))),actions:[IconButton(onPressed:()=>scroll.animateTo(scroll.position.maxScrollExtent,duration:1800.ms,curve:Curves.easeInOutCubic),icon:const Icon(Icons.favorite_border_rounded,color:cream)),const SizedBox(width:8)],flexibleSpace:FlexibleSpaceBar(collapseMode:CollapseMode.parallax,stretchModes:const [StretchMode.zoomBackground,StretchMode.blurBackground],background:Stack(fit:StackFit.expand,children:[Image.asset(gallery.first,fit:BoxFit.cover,alignment:const Alignment(.05,.15)),const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x55241713),Color(0x33241713),Color(0xE8241713)],stops:[0,.45,1]))),Positioned.fill(child:CustomPaint(painter:FilmPainter())),SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(25,100,25,42),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[const Eyebrow('ИСТОРИЯ, НАПИСАННАЯ СЕРДЦЕМ'),const SizedBox(height:20),Text('Надежда',style:titleStyle(76,cream)),Padding(padding:const EdgeInsets.only(left:82),child:Text('&',style:GoogleFonts.marckScript(fontSize:57,height:.8,color:blush))),Padding(padding:const EdgeInsets.only(left:48),child:Text('Арсений',style:titleStyle(76,cream))),const SizedBox(height:30),Row(children:[Container(width:1,height:34,color:blush),const SizedBox(width:13),Text('вместе с 27 декабря 2024',style:GoogleFonts.cormorantGaramond(fontSize:18,fontStyle:FontStyle.italic,color:cream))]),const SizedBox(height:34),Row(children:[Text('ЛИСТАЙ НАШУ ИСТОРИЮ',style:GoogleFonts.manrope(fontSize:9,letterSpacing:2,color:cream.withValues(alpha:.72))),const SizedBox(width:14),const CircleIcon()])])))])));
+ Widget beginning()=>Container(color:paper,padding:const EdgeInsets.fromLTRB(22,95,22,100),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const SectionLabel('01  /  НАЧАЛО'),const SizedBox(height:52),scriptText('Всё началось с нас'),Text('Два человека.\nОдна история.',style:titleStyle(59,ink)),const SizedBox(height:32),copyText('Среди миллионов случайностей мы нашли друг друга. И с того дня обычные моменты стали любимыми воспоминаниями.'),const SizedBox(height:44),Transform.rotate(angle:.018,child:const Polaroid(image:'assets/images/1770272714265(1).png',caption:'так всё начиналось…')),const SizedBox(height:58),const TogetherCounter()]));
+ Widget ticker()=>Container(height:55,color:blush,child:Center(child:Text('ONE LOVE  ·  ONE STORY  ·  ONE FOREVER  ·  ♥',maxLines:1,style:GoogleFonts.manrope(fontSize:10,letterSpacing:2.2,fontWeight:FontWeight.w600,color:ink))));
+ Widget timeline()=>Container(color:ink,padding:const EdgeInsets.fromLTRB(22,95,22,110),child:Column(children:[const SectionLabel('02  /  ГЛАВЫ',light:true),const SizedBox(height:70),chapter('27','ДЕКАБРЯ · 2024','Наша первая глава','День, когда появилось «мы»','С этого дня началась история, которую хочется перечитывать снова и снова.','assets/images/IMG_1973.jpg',-.025),const SizedBox(height:100),chapter('29','ОКТЯБРЯ · 2025','Самый важный вопрос','И самое счастливое «Да»','В тот вечер наше «навсегда» перестало быть мечтой и стало обещанием.','assets/images/20251031_224904.jpg',.025)]));
+ Widget chapter(String day,String date,String script,String title,String copy,String image,double angle)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(crossAxisAlignment:CrossAxisAlignment.end,children:[Text(day,style:GoogleFonts.cormorantGaramond(fontSize:76,height:.75,color:blush)),const SizedBox(width:14),Padding(padding:const EdgeInsets.only(bottom:4),child:Text(date,style:GoogleFonts.manrope(fontSize:9,letterSpacing:1.7,color:cream.withValues(alpha:.55))))]),const SizedBox(height:27),scriptText(script),Text(title,style:titleStyle(48,cream)),const SizedBox(height:20),copyText(copy,light:true),const SizedBox(height:34),Transform.rotate(angle:angle,child:Polaroid(image:image,caption:day=='27'?'даже расстояние не помеха':'одно «Да» — и целая жизнь'))]);
+ Widget cinema()=>SizedBox(height:700,child:Stack(fit:StackFit.expand,children:[Image.asset('assets/images/IMG_2423.jpg',fit:BoxFit.cover),const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0x77241713),Color(0x99241713),Color(0xEE241713)]))),Positioned.fill(child:CustomPaint(painter:FilmPainter())),Padding(padding:const EdgeInsets.symmetric(horizontal:25),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text('27 · 12 · 24',style:labelStyle(cream)),const SizedBox(height:36),scriptText('И вдруг я понял'),Text('«Все дороги\nвели меня к тебе»',textAlign:TextAlign.center,style:GoogleFonts.cormorantGaramond(fontSize:59,height:.88,fontStyle:FontStyle.italic,color:cream)),const SizedBox(height:30),Text('НАШЕ МАЛЕНЬКОЕ КИНО БЕЗ ФИНАЛЬНЫХ ТИТРОВ',textAlign:TextAlign.center,style:GoogleFonts.manrope(fontSize:8,letterSpacing:1.6,color:cream.withValues(alpha:.55)))])),Positioned(left:0,right:0,bottom:28,child:SizedBox(height:88,child:ListView.builder(scrollDirection:Axis.horizontal,itemCount:gallery.length,itemBuilder:(_,i)=>Container(width:100,margin:const EdgeInsets.only(right:5),decoration:BoxDecoration(border:Border.all(color:cream,width:3)),child:Image.asset(gallery[i],fit:BoxFit.cover)))))]));
+ Widget moments()=>Container(color:paper,padding:const EdgeInsets.fromLTRB(16,95,16,105),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Padding(padding:EdgeInsets.symmetric(horizontal:6),child:SectionLabel('03  /  НАШИ МОМЕНТЫ')),const SizedBox(height:50),Padding(padding:const EdgeInsets.symmetric(horizontal:6),child:scriptText('Жизнь в кадрах')),Padding(padding:const EdgeInsets.symmetric(horizontal:6),child:Text('Счастье —\nв мелочах',style:titleStyle(61,ink))),const SizedBox(height:40),GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:gallery.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisSpacing:8,crossAxisSpacing:8,childAspectRatio:.73),itemBuilder:(_,i)=>GestureDetector(onTap:()=>Navigator.push(context,PageRouteBuilder(opaque:false,pageBuilder:(_,a,__)=>FadeTransition(opacity:a,child:PhotoViewer(images:gallery,initial:i)))),child:Hero(tag:gallery[i],child:ClipRRect(borderRadius:BorderRadius.circular(i.isEven?2:22),child:Stack(fit:StackFit.expand,children:[Image.asset(gallery[i],fit:BoxFit.cover),const DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.transparent,Color(0x99241713)],stops:[.55,1]))),Positioned(left:12,right:8,bottom:12,child:Text(['Любимый кадр','Первый снег','Дом там, где мы','Счастье рядом','Просто мы','Наш уют','Твоя улыбка','Моя любовь'][i],style:GoogleFonts.cormorantGaramond(fontSize:18,fontStyle:FontStyle.italic,color:cream)))])))).animate().fadeIn(delay:(80*i).ms).slideY(begin:.08))]));
+ Widget promise()=>Container(color:const Color(0xFFE8DDD0),child:Column(children:[SizedBox(height:570,width:double.infinity,child:Image.asset('assets/images/IMG_2013.png',fit:BoxFit.cover)),Padding(padding:const EdgeInsets.fromLTRB(28,82,28,95),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.favorite_rounded,color:wine,size:19),const SizedBox(height:27),scriptText('Несмотря на расстояния'),Text('Я всегда\nвыбираю тебя',style:titleStyle(60,ink)),const SizedBox(height:28),copyText('В каждом городе, в каждом дне, в каждой версии будущего. Ты — мой человек, мой дом и моё самое тёплое «навсегда».')]))]));
+ Widget reasons()=>Container(color:paper,padding:const EdgeInsets.fromLTRB(20,95,20,105),child:Column(children:[const SectionLabel('04  /  ЗА ЧТО Я ТЕБЯ ЛЮБЛЮ'),const SizedBox(height:55),scriptText('Тысяча причин'),Text('И каждый день\nнаходится новая',textAlign:TextAlign.center,style:titleStyle(52,ink)),const SizedBox(height:50),const ReasonCard('01',Icons.wb_sunny_outlined,'За твою улыбку','Она превращает самый обычный день в самый лучший.'),const SizedBox(height:12),const ReasonCard('02',Icons.all_inclusive_rounded,'За наше «вместе»','С тобой не страшны ни расстояния, ни время, ни вечность.'),const SizedBox(height:12),const ReasonCard('03',Icons.favorite_border_rounded,'За настоящее','Рядом с тобой можно быть собой — живым и счастливым.'),const SizedBox(height:50),const LoveBurstButton()]));
+ Widget letter()=>Container(color:rose,padding:const EdgeInsets.fromLTRB(18,105,18,105),child:const LoveLetter());
+ Widget footer()=>Container(color:ink,padding:const EdgeInsets.fromLTRB(24,95,24,125),child:Column(children:[scriptText('Продолжение следует…'),const SizedBox(height:8),Text('Навсегда\nначинается\nкаждый день.',textAlign:TextAlign.center,style:titleStyle(58,cream)),const SizedBox(height:75),Container(height:1,color:cream.withValues(alpha:.15)),const SizedBox(height:22),Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text('НАДЕЖДА & АРСЕНИЙ',style:labelStyle(cream)),Text('27.12.2024 — ∞',style:labelStyle(cream))])])) ;
 }
+TextStyle titleStyle(double size,Color color)=>GoogleFonts.cormorantGaramond(fontSize:size,height:.88,letterSpacing:-2,color:color,fontWeight:FontWeight.w500);
+TextStyle labelStyle(Color color)=>GoogleFonts.manrope(fontSize:8,letterSpacing:1.5,color:color.withValues(alpha:.65));
+Widget scriptText(String text)=>Text(text,style:GoogleFonts.marckScript(fontSize:36,color:rose));
+Widget copyText(String text,{bool light=false})=>Text(text,style:GoogleFonts.manrope(fontSize:12.5,height:1.8,color:(light?cream:ink).withValues(alpha:.65)));
+
+class PixelHeartIntro extends StatefulWidget {final VoidCallback onFinished;const PixelHeartIntro({super.key,required this.onFinished});@override State<PixelHeartIntro> createState()=>_PixelHeartIntroState();}
+class _PixelHeartIntroState extends State<PixelHeartIntro> with SingleTickerProviderStateMixin {late final pulse=AnimationController(vsync:this,duration:500.ms)..repeat(reverse:true);Timer? timer;bool leaving=false;int beat=0;@override void initState(){super.initState();timer=Timer.periodic(500.ms,(t){if(mounted)setState(()=>beat++);if(beat>=8)finish();});}void finish(){if(leaving)return;timer?.cancel();HapticFeedback.mediumImpact();setState(()=>leaving=true);Future.delayed(650.ms,widget.onFinished);}@override void dispose(){timer?.cancel();pulse.dispose();super.dispose();}@override Widget build(BuildContext context)=>AnimatedOpacity(opacity:leaving?0:1,duration:600.ms,child:Material(color:const Color(0xFF120C16),child:InkWell(onTap:finish,child:Stack(children:[Positioned.fill(child:CustomPaint(painter:StarPainter())),Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Text('НАДЕЖДА  +  АРСЕНИЙ',style:labelStyle(blush)),const SizedBox(height:40),AnimatedBuilder(animation:pulse,builder:(_,child)=>Transform.scale(scale:1+pulse.value*.06,child:child),child:CustomPaint(size:const Size(260,220),painter:PixelHeartPainter())),const SizedBox(height:34),Text('НАША ИСТОРИЯ',style:GoogleFonts.manrope(fontSize:20,letterSpacing:5,fontWeight:FontWeight.w600,color:cream,shadows:const [Shadow(color:wine,offset:Offset(3,3))])),const SizedBox(height:12),Text('—  120 BPM  —',style:GoogleFonts.manrope(fontSize:9,letterSpacing:2,color:rose)),const SizedBox(height:35),Text('НАЖМИ, ЧТОБЫ ОТКРЫТЬ',style:labelStyle(cream))])),Positioned(left:48,right:48,bottom:38,child:Row(children:List.generate(8,(i)=>Expanded(child:AnimatedContainer(duration:250.ms,height:3,margin:const EdgeInsets.symmetric(horizontal:2),color:i<beat?rose:cream.withValues(alpha:.1))))))]))));}
+class TogetherCounter extends StatefulWidget{const TogetherCounter({super.key});@override State<TogetherCounter> createState()=>_TogetherCounterState();}class _TogetherCounterState extends State<TogetherCounter>{Timer? timer;Duration duration=Duration.zero;@override void initState(){super.initState();update();timer=Timer.periodic(const Duration(minutes:1),(_)=>update());}void update()=>setState(()=>duration=DateTime.now().difference(DateTime(2024,12,27)));@override void dispose(){timer?.cancel();super.dispose();}@override Widget build(BuildContext context)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Container(height:1,color:ink.withValues(alpha:.15)),const SizedBox(height:22),Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[unit(duration.inDays,'ДНЕЙ'),unit(duration.inHours%24,'ЧАСОВ'),unit(duration.inMinutes%60,'МИНУТ')]),const SizedBox(height:16),Text('МЫ ВЫБИРАЕМ ДРУГ ДРУГА',style:labelStyle(ink))]);Widget unit(int n,String s)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(n.toString().padLeft(2,'0'),style:GoogleFonts.cormorantGaramond(fontSize:48,height:1,color:ink)),Text(s,style:labelStyle(wine))]);}
+class Polaroid extends StatelessWidget{final String image,caption;const Polaroid({super.key,required this.image,required this.caption});@override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.fromLTRB(12,12,12,28),decoration:BoxDecoration(color:cream,boxShadow:[BoxShadow(color:ink.withValues(alpha:.16),blurRadius:35,offset:const Offset(0,18))]),child:Column(children:[AspectRatio(aspectRatio:.82,child:Image.asset(image,fit:BoxFit.cover)),const SizedBox(height:12),Text(caption,style:GoogleFonts.marckScript(fontSize:22,color:wine))]));}
+class SectionLabel extends StatelessWidget{final String text;final bool light;const SectionLabel(this.text,{super.key,this.light=false});@override Widget build(BuildContext context)=>Column(children:[Row(children:[Text('✦',style:TextStyle(color:light?blush:wine,fontSize:11)),const SizedBox(width:10),Text(text,style:labelStyle(light?blush:wine))]),const SizedBox(height:16),Container(height:1,color:(light?cream:ink).withValues(alpha:.15))]);}
+class Eyebrow extends StatelessWidget{final String text;const Eyebrow(this.text,{super.key});@override Widget build(BuildContext context)=>Row(children:[Container(width:34,height:1,color:cream),const SizedBox(width:12),Expanded(child:Text(text,style:labelStyle(cream)))]);}
+class CircleIcon extends StatelessWidget{const CircleIcon({super.key});@override Widget build(BuildContext context)=>Container(width:43,height:43,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:cream.withValues(alpha:.55))),child:const Icon(Icons.arrow_downward_rounded,size:17,color:cream));}
+class ReasonCard extends StatelessWidget{final String number,title,copy;final IconData icon;const ReasonCard(this.number,this.icon,this.title,this.copy,{super.key});@override Widget build(BuildContext context)=>Container(width:double.infinity,padding:const EdgeInsets.all(27),decoration:BoxDecoration(color:cream.withValues(alpha:.72),border:Border.all(color:ink.withValues(alpha:.12))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(number,style:labelStyle(wine)),const SizedBox(height:24),Center(child:Container(width:74,height:74,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:wine.withValues(alpha:.25))),child:Icon(icon,color:wine,size:29))),const SizedBox(height:25),Text(title,style:titleStyle(33,ink)),const SizedBox(height:12),copyText(copy)]));}
+class LoveBurstButton extends StatefulWidget{const LoveBurstButton({super.key});@override State<LoveBurstButton> createState()=>_LoveBurstButtonState();}class _LoveBurstButtonState extends State<LoveBurstButton>{int count=0;@override Widget build(BuildContext context)=>GestureDetector(onTap:(){HapticFeedback.heavyImpact();setState(()=>count++);},child:Column(children:[Text('НАЖМИ, ЕСЛИ ТОЖЕ ЛЮБИШЬ',style:labelStyle(ink)),Icon(Icons.favorite_rounded,size:65,color:wine).animate(key:ValueKey(count)).scale(duration:350.ms,curve:Curves.elasticOut).shimmer(color:blush),Text('$count',style:GoogleFonts.cormorantGaramond(fontSize:18,color:wine))]));}
+class LoveLetter extends StatefulWidget{const LoveLetter({super.key});@override State<LoveLetter> createState()=>_LoveLetterState();}
+class _LoveLetterState extends State<LoveLetter>{
+ bool open=false;
+ @override Widget build(BuildContext context)=>AnimatedContainer(
+  duration:700.ms,padding:const EdgeInsets.fromLTRB(28,52,28,42),
+  decoration:BoxDecoration(color:cream,boxShadow:[BoxShadow(color:ink.withValues(alpha:.27),blurRadius:60,offset:const Offset(0,26))]),
+  child:Column(children:[
+   Text('ЛИЧНОЕ ПИСЬМО',style:labelStyle(ink)),const SizedBox(height:26),
+   Text('Моему котёнку',style:GoogleFonts.marckScript(fontSize:45,color:wine)),
+   AnimatedCrossFade(duration:650.ms,crossFadeState:open?CrossFadeState.showSecond:CrossFadeState.showFirst,firstChild:const SizedBox(height:15),secondChild:Padding(padding:const EdgeInsets.only(top:25),child:Column(children:[Text('Спасибо тебе за каждый день рядом. За смех до слёз, за наши разговоры и тепло.\n\nЯ хочу собирать с тобой ещё тысячи воспоминаний, встречать рассветы и строить наш дом.',textAlign:TextAlign.center,style:GoogleFonts.cormorantGaramond(fontSize:19,height:1.55,color:ink.withValues(alpha:.75))),const SizedBox(height:22),Text('Люблю тебя.\nТвой Арсений',textAlign:TextAlign.center,style:GoogleFonts.marckScript(fontSize:28,color:wine))]))),
+   TextButton(onPressed:()=>setState(()=>open=!open),child:Text(open?'СВЕРНУТЬ ПИСЬМО  ♥':'ОТКРЫТЬ ПИСЬМО  ♡',style:labelStyle(ink))),
+  ]),
+ );
+}
+class PhotoViewer extends StatefulWidget{final List<String> images;final int initial;const PhotoViewer({super.key,required this.images,required this.initial});@override State<PhotoViewer> createState()=>_PhotoViewerState();}
+class _PhotoViewerState extends State<PhotoViewer>{
+ late final PageController page=PageController(initialPage:widget.initial);late int index=widget.initial;
+ @override void dispose(){page.dispose();super.dispose();}
+ @override Widget build(BuildContext context)=>Scaffold(backgroundColor:ink.withValues(alpha:.97),body:SafeArea(child:Stack(children:[
+  PageView.builder(controller:page,itemCount:widget.images.length,onPageChanged:(i)=>setState(()=>index=i),itemBuilder:(_,i)=>InteractiveViewer(minScale:1,maxScale:4,child:Center(child:Hero(tag:widget.images[i],child:Image.asset(widget.images[i],fit:BoxFit.contain))))),
+  Positioned(top:8,right:8,child:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close_rounded,color:cream,size:30))),
+  Positioned(left:0,right:0,bottom:22,child:Text('${index+1} / ${widget.images.length}',textAlign:TextAlign.center,style:labelStyle(cream))),
+ ])));
+}
+class PixelHeartPainter extends CustomPainter{@override void paint(Canvas c,Size s){const map=['.##...##.','####.####','#########','#########','.#######.','..#####..','...###...','....#....'];final cell=s.width/9;for(var y=0;y<map.length;y++)for(var x=0;x<9;x++)if(map[y][x]=='#'){final p=Paint()..color=x<3&&y<3?const Color(0xFFF87582):(x>6&&y<4?const Color(0xFF9A2046):const Color(0xFFDF3956));c.drawRect(Rect.fromLTWH(x*cell,(y+.4)*cell,cell-1,cell-1),p);}}@override bool shouldRepaint(PixelHeartPainter old)=>false;}
+class StarPainter extends CustomPainter{@override void paint(Canvas c,Size s){final r=math.Random(27);for(var i=0;i<80;i++){final p=Paint()..color=(i%4==0?rose:cream).withValues(alpha:.12+r.nextDouble()*.2);c.drawRect(Rect.fromLTWH(r.nextDouble()*s.width,r.nextDouble()*s.height,i%3==0?2:1,i%3==0?2:1),p);}}@override bool shouldRepaint(StarPainter old)=>false;}
+class FilmPainter extends CustomPainter{@override void paint(Canvas c,Size s){final p=Paint()..color=Colors.white.withValues(alpha:.035);for(double y=0;y<s.height;y+=4)c.drawRect(Rect.fromLTWH(0,y,s.width,1),p);}@override bool shouldRepaint(FilmPainter old)=>false;}

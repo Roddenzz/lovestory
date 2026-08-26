@@ -1,16 +1,33 @@
-# lovestory
+# Наша история любви
 
-A new Flutter project.
+Персональный сайт Надежды и Арсения с фотографиями, музыкой, хронологией,
+живым счётчиком дней вместе, галереей и личным письмом.
 
-## Getting Started
+## Запуск сайта локально
 
-This project is a starting point for a Flutter application.
+Откройте `index.html` в браузере или запустите любой статический сервер:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+python -m http.server 8080
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Сайт автоматически публикуется в GitHub Pages при push в `main`/`master`.
+В настройках репозитория **Settings → Pages → Source** выберите **GitHub Actions**.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Flutter-приложение сохранено в `lib/` и по-прежнему собирается отдельным workflow.
+
+## Android-приложение
+
+Нативная Flutter-версия находится в `lib/` и использует те же фотографии и музыку.
+Она включает пиксельное интро, кинематографический экран, таймлайн, живой счётчик,
+галерею с масштабированием, музыкальный проигрыватель и интерактивное письмо.
+
+```bash
+flutter pub get
+flutter run
+# или APK:
+flutter build apk --release
+```
+
+GitHub Actions автоматически собирает APK и сохраняет его как артефакт
+`lovestory-apk` на странице запуска workflow **Build Android APK**.
